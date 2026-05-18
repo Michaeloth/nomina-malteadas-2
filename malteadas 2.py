@@ -12,6 +12,15 @@ INVENTARIO_INICIAL = 400
 def calcular_sueldo_neto(monto_bruto):
     return monto_bruto - (monto_bruto * TASA_RETENCION)
 
+# Función auxiliar para transformar números en formato de dinero "350,00$"
+def formatear_dinero(cantidad):
+    # Toma el número, lo redondea a 2 decimales, cambia el punto por coma y le pone el $ al final
+    return f"{cantidad:,.2f}".replace(".", ",").replace(",", ".", f"{cantidad:,.2f}".count(",") - 1) + "$"
+
+# Truco manual más seguro para el formato en español:
+def formato_moneda(valor):
+    return f"{valor:.2f}".replace(".", ",") + "$"
+
 st.set_page_config(page_title="Nómina Michaeloth", page_icon="🥤")
 st.title("🥤 Administración - Malteadas Michaeloth")
 
@@ -37,17 +46,16 @@ if len(st.session_state.db_empleados) < CANTIDAD_EMPLEADOS:
             # 2. VALIDACIÓN DE LAS MALTEADAS (Evita texto o valores vacíos)
             elif cantidad_input is None or str(cantidad_input).strip() == "":
                 st.error("⚠️ Por favor ingresa una cantidad válida de malteadas (solo números).")
-                
             else:
-                # Si todo está correcto, se procesa la información de forma segura
+                # Lógica de bono
                 bruto = SUELDO_BASE + BONO_PRODUCTIVIDAD if cantidad_input >= META_INDIVIDUAL else SUELDO_BASE
                 neto = calcular_sueldo_neto(bruto)
                 
-                # Guardar en la "base de datos"
+                # GUARDAR EN LA "BASE DE DATOS"
                 nuevo_registro = {
                     "Nombre": nombre_input.strip(),
-                    "Ventas": int(cantidad_input), # Forzamos a que se guarde como entero puro
-                    "Sueldo Neto": round(neto, 2)
+                    "Ventas": int(cantidad_input),
+                    "Sueldo Neto": formato_moneda(neto) # Guardamos directamente con el formato 350,00$
                 }
                 st.session_state.db_empleados.append(nuevo_registro)
                 st.success(f"✅ {nombre_input} registrado con éxito.")
@@ -58,22 +66,31 @@ else:
     
     # Convertimos la lista en un DataFrame (Tabla profesional)
     df = pd.DataFrame(st.session_state.db_empleados)
-    st.table(df) # Muestra la base de datos en pantalla
+    st.table(df) # Muestra la base de datos con los sueldos en "350,00$"
 
-    # Cálculos finales
+    # Para hacer operaciones matemáticas en el reporte final, limpiamos temporalmente el formato
     total_v = df["Ventas"].sum()
-    total_n = df["Sueldo Neto"].sum()
+    
+    # Calculamos la nómina total sumando los netos puros de la sesión de nuevo
+    valores_netos = []
+    for emp in st.session_state.db_empleados:
+        # Recalculamos rápido para los totales numéricos del reporte
+        bruto = SUELDO_BASE + BONO_PRODUCTIVIDAD if emp["Ventas"] >= META_INDIVIDUAL else SUELDO_BASE
+        valores_netos.append(calcular_sueldo_neto(bruto))
+        
+    total_n = sum(valores_netos)
     inv_final = INVENTARIO_INICIAL - total_v
     
     col1, col2 = st.columns(2)
-    col1.metric("Total Ventas", total_v)
-    col1.metric("Promedio", f"{df['Ventas'].mean():.2f}")
-    col2.metric("Nómina Total", f"${total_n:.2f}")
-    col2.metric("Inventario Restante", inv_final)
+    col1.metric("Total Ventas", f"{total_v} und")
+    col1.metric("Promedio de Ventas", f"{total_v / CANTIDAD_EMPLEADOS:.1f} und")
+    col2.metric("Nómina Total", formato_moneda(total_n)) # Muestra ej: 2100,00$
+    col2.metric("Inventario Restante", f"{inv_final} und")
 
     if inv_final < 60:
-        st.warning("⚠️ ALERTA: Reponer inventario.")
+        st.warning("⚠️ ALERTA: Reponer inventario inmediato.")
 
     if st.button("Reiniciar Sistema"):
         st.session_state.db_empleados = []
-        st.rerun()
+        # Limpieza limpia compatible con navegadores sin forzar bugs visuales
+        st.write("Sistema reiniciado. Registre nuevos empleados arriba.")
