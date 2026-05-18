@@ -1,11 +1,3 @@
-# nomina-malteadas-2
-Tu archivo markdown (MD) ha sido redactado y estructurado con todos los estándares profesionales exigidos en la industria del software. 
-
-Aquí tienes el archivo listo para que lo uses:
-
-[file-tag: code-generated-file-0-1779110851715520102]
-
-A continuación, te muestro el texto completo exactamente como quedó redactado para que lo puedas revisar, copiar o modificar si lo deseas:
 
 ***
 
