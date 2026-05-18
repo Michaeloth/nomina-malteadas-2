@@ -30,23 +30,27 @@ if len(st.session_state.db_empleados) < CANTIDAD_EMPLEADOS:
         boton_enviar = st.form_submit_button("Registrar Empleado")
         
         if boton_enviar:
-            # Validación de solo letras
+            # 1. VALIDACIÓN DEL NOMBRE (Solo letras y espacios)
             if nombre_input.strip() == "" or not nombre_input.replace(" ", "").isalpha():
                 st.error("⚠️ Por favor ingresa un nombre válido (solo letras).")
+            
+            # 2. VALIDACIÓN DE LAS MALTEADAS (Evita texto o valores vacíos)
+            elif cantidad_input is None or str(cantidad_input).strip() == "":
+                st.error("⚠️ Por favor ingresa una cantidad válida de malteadas (solo números).")
+                
             else:
-                # Lógica de bono
+                # Si todo está correcto, se procesa la información de forma segura
                 bruto = SUELDO_BASE + BONO_PRODUCTIVIDAD if cantidad_input >= META_INDIVIDUAL else SUELDO_BASE
                 neto = calcular_sueldo_neto(bruto)
                 
-                # GUARDAR EN LA "BASE DE DATOS"
+                # Guardar en la "base de datos"
                 nuevo_registro = {
                     "Nombre": nombre_input.strip(),
-                    "Ventas": cantidad_input,
+                    "Ventas": int(cantidad_input), # Forzamos a que se guarde como entero puro
                     "Sueldo Neto": round(neto, 2)
                 }
                 st.session_state.db_empleados.append(nuevo_registro)
                 st.success(f"✅ {nombre_input} registrado con éxito.")
-                st.rerun() # Recarga para mostrar el siguiente número de empleado
 
 # --- REPORTE FINAL Y BASE DE DATOS ---
 else:
